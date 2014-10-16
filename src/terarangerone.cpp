@@ -45,7 +45,7 @@ TerarangerOne::TerarangerOne()
 {
   // Get paramters
   ros::NodeHandle private_node_handle_("~");
-  private_node_handle_.param("portname", port_name_, std::string("/dev/ttyUSB0"));
+  private_node_handle_.param("portname", portname_, std::string("/dev/ttyUSB0"));
 
   // Publishers
   range_publisher_ = nh_.advertise<sensor_msgs::Range>("terarangerone", 1);
@@ -58,7 +58,7 @@ TerarangerOne::TerarangerOne()
   serial_port_->setSerialCallbackFunction(&serial_data_callback_function_);
 
   // Connect serial port
-  if (!serial_port_->connect(port_name_))
+  if (!serial_port_->connect(portname_))
   {
     ros::shutdown();
     return;
@@ -66,7 +66,7 @@ TerarangerOne::TerarangerOne()
 
   // Output loaded parameters to console for double checking
   ROS_INFO("%s is up and running with the following parameters:", ros::this_node::getName().c_str());
-  ROS_INFO("port_name: %s", port_name_.c_str());
+  ROS_INFO("port_name: %s", portname_.c_str());
 
   // Set operation Mode
   setMode(BINARY_MODE);
