@@ -65,8 +65,8 @@ TerarangerOne::TerarangerOne()
   }
 
   // Output loaded parameters to console for double checking
-  ROS_INFO("%s is up and running with the following parameters:", ros::this_node::getName().c_str());
-  ROS_INFO("port_name: %s", portname_.c_str());
+  ROS_INFO("[%s] is up and running with the following parameters:", ros::this_node::getName().c_str());
+  ROS_INFO("[%s] portname: %s",ros::this_node::getName().c_str(), portname_.c_str());
 
   // Set operation Mode
   setMode(BINARY_MODE);
@@ -145,7 +145,6 @@ void TerarangerOne::serialDataCallback(uint8_t single_character)
 
 void TerarangerOne::setMode(char c)
 {
-  printf("Sending Mode command %c\n", c);
   serial_port_->sendChar(c);
 }
 
