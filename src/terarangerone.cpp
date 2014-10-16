@@ -66,7 +66,7 @@ TerarangerOne::TerarangerOne()
 
   // Output loaded parameters to console for double checking
   ROS_INFO("[%s] is up and running with the following parameters:", ros::this_node::getName().c_str());
-  ROS_INFO("[%s] portname: %s",ros::this_node::getName().c_str(), portname_.c_str());
+  ROS_INFO("[%s] portname: %s", ros::this_node::getName().c_str(), portname_.c_str());
 
   // Set operation Mode
   setMode(BINARY_MODE);
@@ -105,42 +105,68 @@ void TerarangerOne::serialDataCallback(uint8_t single_character)
   range_msg.min_range = 0.2;
   range_msg.radiation_type = sensor_msgs::Range::INFRARED;
 
+// Debug Code to show the buffer
+//  if (single_character == 'T')
+//  {
+//    ROS_INFO("TTTT single_character = %3d, buffer_ctr = %d |%3d|%3d|%3d|%3d|", single_character, buffer_ctr,
+//             input_buffer[0], input_buffer[1], input_buffer[2], input_buffer[3]);
+//  }
+//  else
+//  {
+//    ROS_INFO("#### single_character = %3d, buffer_ctr = %d |%3d|%3d|%3d|%3d|", single_character, buffer_ctr,
+//             input_buffer[0], input_buffer[1], input_buffer[2], input_buffer[3]);
+//  }
+
   if (single_character != 'T' && buffer_ctr < 4)
   {
     // not begin of serial feed so add char to buffer
     input_buffer[buffer_ctr++] = single_character;
+    return;
   }
-  else if (single_character == 'T' && buffer_ctr == 4)
+  else if (single_character == 'T')
   {
-    // end of feed, calculate
-    int16_t crc = crc8(input_buffer, 3);
-
-    if (crc == input_buffer[3])
+    if (buffer_ctr == 4)
     {
-      int16_t range = input_buffer[1] << 8;
-      range |= input_buffer[2];
+      // end of feed, calculate
+      int16_t crc = crc8(input_buffer, 3);
 
-      if (range < 14000 && range > 200)
+      if (crc == input_buffer[3])
       {
-        range_msg.header.stamp = ros::Time::now();
-        range_msg.header.seq = seq_ctr++;
-        range_msg.range = range * 0.001; // convert to m
-        range_publisher_.publish(range_msg);
+        int16_t range = input_buffer[1] << 8;
+        range |= input_buffer[2];
+
+        if (range < 14000 && range > 200)
+        {
+          range_msg.header.stamp = ros::Time::now();
+          range_msg.header.seq = seq_ctr++;
+          range_msg.range = range * 0.001; // convert to m
+          range_publisher_.publish(range_msg);
+        }
+        ROS_DEBUG("[%s] all good %.3f m", ros::this_node::getName().c_str(), range_msg.range);
+      }
+      else
+      {
+        ROS_DEBUG("[%s] crc missmatch", ros::this_node::getName().c_str());
       }
     }
-    // reset
-    buffer_ctr = 0;
-
-    // clear struct
-    bzero(&input_buffer, BUFFER_SIZE);
-    // store T
-    input_buffer[buffer_ctr++] = single_character;
-
+    else
+    {
+      ROS_DEBUG("[%s] reveived T but did not expect it, reset buffer without evaluating data",
+               ros::this_node::getName().c_str());
+    }
   }
-  else if (buffer_ctr >= 4)
+  else
   {
-    buffer_ctr = 0;
+    ROS_DEBUG("[%s] buffer_overflowed without receiving T, reset input_buffer", ros::this_node::getName().c_str());
   }
+  // reset
+  buffer_ctr = 0;
+
+  // clear struct
+  bzero(&input_buffer, BUFFER_SIZE);
+
+  // store T
+  input_buffer[buffer_ctr++] = 'T';
 }
 
 void TerarangerOne::setMode(char c)
