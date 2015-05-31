@@ -11,6 +11,7 @@ To use the ROS node you just need to:
 * Create a ROS Workspace
 * Copy the node terarangerone package into the workspace src directory
 * Compile using: catkin_make 
+* Setup environment: source devel/setup.sh
 * Run using: rosrun terarangerone terarangerone_node _portname:=/dev/ttyUSB0
 
 NB: remember to execute the daemon roscore before running the rosrun command
