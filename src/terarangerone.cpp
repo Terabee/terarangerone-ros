@@ -105,18 +105,6 @@ void TerarangerOne::serialDataCallback(uint8_t single_character)
   range_msg.min_range = 0.2;
   range_msg.radiation_type = sensor_msgs::Range::INFRARED;
 
-// Debug Code to show the buffer
-//  if (single_character == 'T')
-//  {
-//    ROS_INFO("TTTT single_character = %3d, buffer_ctr = %d |%3d|%3d|%3d|%3d|", single_character, buffer_ctr,
-//             input_buffer[0], input_buffer[1], input_buffer[2], input_buffer[3]);
-//  }
-//  else
-//  {
-//    ROS_INFO("#### single_character = %3d, buffer_ctr = %d |%3d|%3d|%3d|%3d|", single_character, buffer_ctr,
-//             input_buffer[0], input_buffer[1], input_buffer[2], input_buffer[3]);
-//  }
-
   if (single_character != 'T' && buffer_ctr < 4)
   {
     // not begin of serial feed so add char to buffer
@@ -176,22 +164,17 @@ void TerarangerOne::setMode(char c)
 
 void TerarangerOne::dynParamCallback(const terarangerone::TerarangerOneConfig &config, uint32_t level)
 {
-  if (config.Speed == terarangerone::TerarangerOne_Fast)
+  if (config.Mode == terarangerone::TerarangerOne_Fast)
   {
     setMode(FAST_MODE);
   }
 
-  if (config.Speed == terarangerone::TerarangerOne_Precise)
+  if (config.Mode == terarangerone::TerarangerOne_Precise)
   {
     setMode(PRECISE_MODE);
   }
-
-  if (config.Environment == terarangerone::TerarangerOne_Indoor)
-  {
-    setMode(INDOOR_MODE);
-  }
-
-  if (config.Environment == terarangerone::TerarangerOne_Outdoor)
+ 
+  if (config.Mode == terarangerone::TerarangerOne_Outdoor)
   {
     setMode(OUTDOOR_MODE);
   }
