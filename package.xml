@@ -6,7 +6,10 @@
 
   <maintainer email="luis.rodrigues@terabee.com">Luis Rodrigues</maintainer>
   <license>GNU GPL</license>
-
+  <url type="website">http://wiki.ros.org/terarangerone-ros</url>
+  <url type="repository">https://github.com/Terabee/terarangerone-ros</url>
+  <url type="bugtracker">https://github.com/Terabee/terarangerone-ros/issues</url>
+  
   <buildtool_depend>catkin</buildtool_depend>
 
   <build_depend>roscpp</build_depend>
