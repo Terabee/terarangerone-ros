@@ -14,4 +14,7 @@ To use the ROS node you just need to:
 * Setup environment: source devel/setup.sh
 * Run using: rosrun terarangerone terarangerone_node _portname:=/dev/ttyUSB0
 
+If you want to change the operating mode, run
+* rosrun rqt_reconfigure rqt_reconfigure 
+
 NB: remember to execute the daemon roscore before running the rosrun command
