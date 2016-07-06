@@ -103,6 +103,7 @@ void TerarangerOne::serialDataCallback(uint8_t single_character)
   range_msg.field_of_view = 0.0593;
   range_msg.max_range = 14.0;
   range_msg.min_range = 0.2;
+  range_msg.header.frame_id = "base_range";
   range_msg.radiation_type = sensor_msgs::Range::INFRARED;
 
   if (single_character != 'T' && buffer_ctr < 4)
