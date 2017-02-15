@@ -112,6 +112,8 @@ void SerialPort::setSerialCallbackFunction(boost::function<void(uint8_t)> * f)
 void SerialPort::serialThread()
 {
   uint8_t single_character;
+  ros::Duration poll_interval(0.0001);
+
   // Non read
   while (!serial_thread_should_exit_ && ros::ok())
   {
@@ -119,7 +121,7 @@ void SerialPort::serialThread()
     {
       (*serial_callback_function)(single_character);
     }
-    ros::Duration(0.0001).sleep();
+    else poll_interval.sleep();
   }
   return;
 }
