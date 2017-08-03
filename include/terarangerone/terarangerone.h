@@ -102,6 +102,8 @@ public:
   SerialPort * serial_port_;
   boost::function<void(uint8_t)> serial_data_callback_function_;
 
+  sensor_msgs::Range range_msg_;
+  ros::Duration publish_interval_;
   std::string portname_;
 };
 

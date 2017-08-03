@@ -41,11 +41,28 @@
 namespace terarangerone
 {
 
+//static const float MIN_RANGE_MM = 150;
+//static const float MAX_RANGE_MM = 14000;
+//static const float FIELD_OF_VIEW = 0.0593;
+
 TerarangerOne::TerarangerOne()
 {
   // Get paramters
   ros::NodeHandle private_node_handle_("~");
-  private_node_handle_.param("portname", portname_, std::string("/dev/ttyUSB0"));
+  
+  double publish_rate_hz;
+  std::string portname;
+  
+  private_node_handle_.param<std::string>("portname", portname, "/dev/ttyUSB0");
+  private_node_handle_.param<std::string>("frame_id", range_msg_.header.frame_id, "base_range");
+  private_node_handle_.param<double>("publish_rate_hz", publish_rate_hz, 1000);
+  private_node_handle_.param<float>("min_range", range_msg_.min_range, 0.2);
+  private_node_handle_.param<float>("max_range", range_msg_.max_range, 14.0);
+  private_node_handle_.param<float>("field_of_view", range_msg_.field_of_view, 0.0593);
+
+  publish_interval_ = ros::Duration(1/publish_rate_hz);
+
+  range_msg_.radiation_type = sensor_msgs::Range::INFRARED;
 
   // Publishers
   range_publisher_ = nh_.advertise<sensor_msgs::Range>("terarangerone", 1);
@@ -58,7 +75,7 @@ TerarangerOne::TerarangerOne()
   serial_port_->setSerialCallbackFunction(&serial_data_callback_function_);
 
   // Connect serial port
-  if (!serial_port_->connect(portname_))
+  if (!serial_port_->connect(portname))
   {
     ros::shutdown();
     return;
@@ -66,7 +83,7 @@ TerarangerOne::TerarangerOne()
 
   // Output loaded parameters to console for double checking
   ROS_INFO("[%s] is up and running with the following parameters:", ros::this_node::getName().c_str());
-  ROS_INFO("[%s] portname: %s", ros::this_node::getName().c_str(), portname_.c_str());
+  ROS_INFO("[%s] portname: %s", ros::this_node::getName().c_str(), portname.c_str());
 
   // Set operation Mode
   setMode(BINARY_MODE);
@@ -99,13 +116,6 @@ void TerarangerOne::serialDataCallback(uint8_t single_character)
   static int buffer_ctr = 0;
   static int seq_ctr = 0;
 
-  sensor_msgs::Range range_msg;
-  range_msg.field_of_view = 0.0593;
-  range_msg.max_range = 14.0;
-  range_msg.min_range = 0.2;
-  range_msg.header.frame_id = "base_range";
-  range_msg.radiation_type = sensor_msgs::Range::INFRARED;
-
   if (single_character != 'T' && buffer_ctr < 4)
   {
     // not begin of serial feed so add char to buffer
@@ -121,17 +131,26 @@ void TerarangerOne::serialDataCallback(uint8_t single_character)
 
       if (crc == input_buffer[3])
       {
-        int16_t range = input_buffer[1] << 8;
-        range |= input_buffer[2];
+        int16_t range_mm = input_buffer[1] << 8;
+        range_mm |= input_buffer[2];
+        double range_m = range_mm * 0.001; // convert to m;
 
-        if (range < 14000 && range > 200)
+        ROS_INFO_ONCE("TerarangerOne: received range=%.3fm", range_m );
+
+        if ( range_m > range_msg_.min_range && range_m < range_msg_.max_range )
         {
-          range_msg.header.stamp = ros::Time::now();
-          range_msg.header.seq = seq_ctr++;
-          range_msg.range = range * 0.001; // convert to m
-          range_publisher_.publish(range_msg);
+          ros::Time time_now = ros::Time::now();
+          ros::Duration interval = time_now - range_msg_.header.stamp;
+          
+          if ( interval > publish_interval_ )
+          {
+              range_msg_.header.stamp = time_now;
+              range_msg_.header.seq = seq_ctr++;
+              range_msg_.range = range_m;
+              range_publisher_.publish(range_msg_);
+          }
         }
-        ROS_DEBUG("[%s] all good %.3f m", ros::this_node::getName().c_str(), range_msg.range);
+        ROS_DEBUG("[%s] all good %.3f m", ros::this_node::getName().c_str(), range_msg_.range);
       }
       else
       {
