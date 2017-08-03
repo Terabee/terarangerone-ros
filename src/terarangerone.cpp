@@ -41,9 +41,9 @@
 namespace terarangerone
 {
 
-static const float MIN_RANGE_MM = 200;
-static const float MAX_RANGE_MM = 14000;
-static const float FIELD_OF_VIEW = 0.0593;
+//static const float MIN_RANGE_MM = 150;
+//static const float MAX_RANGE_MM = 14000;
+//static const float FIELD_OF_VIEW = 0.0593;
 
 TerarangerOne::TerarangerOne()
 {
@@ -51,18 +51,17 @@ TerarangerOne::TerarangerOne()
   ros::NodeHandle private_node_handle_("~");
   
   double publish_rate_hz;
-  std::string portname, frame_id;
+  std::string portname;
   
   private_node_handle_.param<std::string>("portname", portname, "/dev/ttyUSB0");
-  private_node_handle_.param<std::string>("frame_id", frame_id, "base_range");
+  private_node_handle_.param<std::string>("frame_id", range_msg_.header.frame_id, "base_range");
   private_node_handle_.param<double>("publish_rate_hz", publish_rate_hz, 1000);
+  private_node_handle_.param<float>("min_range", range_msg_.min_range, 0.2);
+  private_node_handle_.param<float>("max_range", range_msg_.max_range, 14.0);
+  private_node_handle_.param<float>("field_of_view", range_msg_.field_of_view, 0.0593);
 
   publish_interval_ = ros::Duration(1/publish_rate_hz);
 
-  range_msg_.field_of_view = FIELD_OF_VIEW;
-  range_msg_.max_range = MAX_RANGE_MM/1000.0;
-  range_msg_.min_range = MIN_RANGE_MM/1000.0;
-  range_msg_.header.frame_id = frame_id;
   range_msg_.radiation_type = sensor_msgs::Range::INFRARED;
 
   // Publishers
@@ -132,10 +131,13 @@ void TerarangerOne::serialDataCallback(uint8_t single_character)
 
       if (crc == input_buffer[3])
       {
-        int16_t range = input_buffer[1] << 8;
-        range |= input_buffer[2];
+        int16_t range_mm = input_buffer[1] << 8;
+        range_mm |= input_buffer[2];
+        double range_m = range_mm * 0.001; // convert to m;
 
-        if (range < MAX_RANGE_MM && range > MIN_RANGE_MM )
+        ROS_INFO_ONCE("TerarangerOne: received range=%.3fm", range_m );
+
+        if ( range_m > range_msg_.min_range && range_m < range_msg_.max_range )
         {
           ros::Time time_now = ros::Time::now();
           ros::Duration interval = time_now - range_msg_.header.stamp;
@@ -144,7 +146,7 @@ void TerarangerOne::serialDataCallback(uint8_t single_character)
           {
               range_msg_.header.stamp = time_now;
               range_msg_.header.seq = seq_ctr++;
-              range_msg_.range = range * 0.001; // convert to m
+              range_msg_.range = range_m;
               range_publisher_.publish(range_msg_);
           }
         }
