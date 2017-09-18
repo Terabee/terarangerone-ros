@@ -1,3 +1,7 @@
+# DEPRECATION warning
+
+This package will not be supported in the future. To get the latest updates please use [teraranger_array](https://github.com/Terabee/teraranger) with _'one'_ nod
+
 TeraRanger One ROS Module
 =========================
 
